@@ -1,0 +1,81 @@
+service:
+  name: oif-users
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  stage: ${opt:stage, 'dev'} 
+  region: us-east-1
+  profile: ab3
+  environment:
+  iamRoleStatements:
+  tracing:
+    apiGateway: true
+    lambda: true
+  httpApi:
+    payload: '2.0'
+    cors: true
+    authorizers:
+      CognitoJwtAuthorizer:
+        identitySource: $request.header.authorization
+        issuerUrl: ${self:resources.Outputs.OifUserPoolProviderUrl.Value}
+        audience:
+        - ${self:resources.Outputs.CognitoUserPoolClientId.Value}
+
+functions:
+  triggers_onUserMigration:
+    handler: src/events/triggers.onUserMigration
+    events:
+      - cognitoUserPool:
+          pool: OifUserPool
+          trigger: UserMigration
+  http_getUser:
+    handler: src/events/http.getUser
+    events:
+      - httpApi:
+          method: GET
+          path: /api/user
+          authorizer:
+            name: CognitoJwtAuthorizer
+  http_login:
+    handler: src/events/http.login
+    events:
+      - httpApi:
+          method: POST
+          path: /api/users/login
+  http_updateUser:
+    handler: src/events/http.updateUser
+    events:
+      - httpApi:
+          method: PUT
+          path: /api/users
+          authorizer:
+            name: CognitoJwtAuthorizer
+  http_register:
+    handler: src/events/http.register
+    events:
+      - httpApi:
+          method: POST
+          path: /api/users
+
+resources:
+  Resources:
+    HttpApiAuthorizerCognitoJwtAuthorizer:
+      DependsOn: CognitoUserPoolOifUserPool
+    CognitoUserPoolClient:
+      Type: AWS::Cognito::UserPoolClient
+      DependsOn: CognitoUserPoolOifUserPool
+      Properties:
+        UserPoolId: ${self:resources.Outputs.OifUserPoolProviderId.Value}
+  Outputs:
+    OifUserPoolProviderUrl:
+      Value:
+        Fn::GetAtt: 
+          - CognitoUserPoolOifUserPool
+          - ProviderURL
+    OifUserPoolProviderId:
+      Value: 
+        Ref: CognitoUserPoolOifUserPool
+    CognitoUserPoolClientId:
+      Value:
+        Ref: CognitoUserPoolClient
