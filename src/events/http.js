@@ -33,6 +33,7 @@ const _getUser = async (event) => {
 };
 
 const _login = async (event) => {
+  console.log(JSON.stringify(event));
   const { email, password } = event.body.user;
   const params = {
     AuthFlow: "USER_PASSWORD_AUTH",
@@ -44,50 +45,54 @@ const _login = async (event) => {
   };
   const result = await cisp.initiateAuth(params).promise();
   return {
-      statusCode: 200,
-      body:{
-          user:{
-              username: '',
-              email: email,
-              token: result.AuthenticationResult.AccessToken,
-              bio: '',
-              image: ''
-          }
-      }
-  }
+    statusCode: 200,
+    body: {
+      user: {
+        username: "",
+        email: email,
+        token: result.AuthenticationResult.AccessToken,
+        bio: "",
+        image: "",
+      },
+    },
+  };
 };
 
 const _updateUser = async (event) => {
-    //can do bio and image like this
-    const result = await cisp.adminUpdateUserAttributes({
-        UserAttributes: [
-            {
-                Name: 
-            }
-        ]
-    }).promise()
-    //if password  needs to change, can use adminSetUserPassword
-    //cannot change username
+  console.log(JSON.stringify(event));
+  //can do bio and image like this
+  const result = await cisp
+    .adminUpdateUserAttributes({
+      UserAttributes: [],
+    })
+    .promise();
+  //if password  needs to change, can use adminSetUserPassword
+  //cannot change username
 };
 
 const _register = async (event) => {
-    const {username, email, password} = event.body;
-    const result = await cisp.signUp({
-        ClientId: USER_POOL_APP_CLIENT_ID,
-        Password: password,
-        Username: username,
-        UserAttributes: [
-            {
-                Name: 'email',
-                Value: email
-            }
-        ]
-    }).promise();
-    //then need to admin confirm sign up
-    const confirmed = await cisp.adminConfirmSignUp({
-        UserPoolId: USER_POOL_ID,
-        Username: username
-    }).promise();
+  console.log(JSON.stringify(event));
+  const { username, email, password } = event.body;
+  const result = await cisp
+    .signUp({
+      ClientId: USER_POOL_APP_CLIENT_ID,
+      Password: password,
+      Username: username,
+      UserAttributes: [
+        {
+          Name: "email",
+          Value: email,
+        },
+      ],
+    })
+    .promise();
+  //then need to admin confirm sign up
+  const confirmed = await cisp
+    .adminConfirmSignUp({
+      UserPoolId: USER_POOL_ID,
+      Username: username,
+    })
+    .promise();
 };
 
 const wrap = (func) => {
