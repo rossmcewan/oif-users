@@ -15,5 +15,9 @@
   "bugs": {
     "url": "https://github.com/rossmcewan/oif-users/issues"
   },
-  "homepage": "https://github.com/rossmcewan/oif-users#readme"
+  "homepage": "https://github.com/rossmcewan/oif-users#readme",
+  "dependencies": {
+    "aws-sdk": "^2.738.0",
+    "middy": "^0.36.0"
+  }
 }

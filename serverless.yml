@@ -8,6 +8,8 @@ provider:
   region: us-east-1
   profile: ab3
   environment:
+    USER_POOL_ID: ${self:resources.Outputs.OifUserPoolProviderId.Value}
+    USER_POOL_APP_CLIENT_ID: ${self:resources.Outputs.CognitoUserPoolClientId.Value}
   iamRoleStatements:
   tracing:
     apiGateway: true
