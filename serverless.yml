@@ -7,10 +7,6 @@ provider:
   stage: ${opt:stage, 'dev'} 
   region: us-east-1
   profile: ab3
-  environment:
-    USER_POOL_ID: ${self:resources.Outputs.OifUserPoolProviderId.Value}
-    USER_POOL_APP_CLIENT_ID: ${self:resources.Outputs.CognitoUserPoolClientId.Value}
-  iamRoleStatements:
   tracing:
     apiGateway: true
     lambda: true
@@ -24,6 +20,9 @@ provider:
         audience:
         - ${self:resources.Outputs.CognitoUserPoolClientId.Value}
 
+plugins:
+  - serverless-iam-roles-per-function
+
 functions:
   triggers_onUserMigration:
     handler: src/events/triggers.onUserMigration
@@ -33,6 +32,17 @@ functions:
           trigger: UserMigration
   http_getUser:
     handler: src/events/http.getUser
+    environment:
+      USER_POOL_ID: ${self:resources.Outputs.OifUserPoolId.Value}
+      USER_POOL_APP_CLIENT_ID: ${self:resources.Outputs.CognitoUserPoolClientId.Value}
+    iamRoleStatements:
+      - Effect: Allow
+        Action: 
+          - cognito-idp:*
+        Resource:
+          - ${self:resources.Outputs.OifUserPoolArn.Value}
+    dependsOn:
+      - CognitoUserPoolClient
     events:
       - httpApi:
           method: GET
@@ -41,12 +51,34 @@ functions:
             name: CognitoJwtAuthorizer
   http_login:
     handler: src/events/http.login
+    environment:
+      USER_POOL_ID: ${self:resources.Outputs.OifUserPoolId.Value}
+      USER_POOL_APP_CLIENT_ID: ${self:resources.Outputs.CognitoUserPoolClientId.Value}
+    iamRoleStatements:
+      - Effect: Allow
+        Action: 
+          - cognito-idp:*
+        Resource:
+          - ${self:resources.Outputs.OifUserPoolArn.Value}
+    dependsOn:
+      - CognitoUserPoolClient
     events:
       - httpApi:
           method: POST
           path: /api/users/login
   http_updateUser:
     handler: src/events/http.updateUser
+    environment:
+      USER_POOL_ID: ${self:resources.Outputs.OifUserPoolId.Value}
+      USER_POOL_APP_CLIENT_ID: ${self:resources.Outputs.CognitoUserPoolClientId.Value}
+    iamRoleStatements:
+      - Effect: Allow
+        Action: 
+          - cognito-idp:*
+        Resource:
+          - ${self:resources.Outputs.OifUserPoolArn.Value}
+    dependsOn:
+      - CognitoUserPoolClient
     events:
       - httpApi:
           method: PUT
@@ -55,6 +87,17 @@ functions:
             name: CognitoJwtAuthorizer
   http_register:
     handler: src/events/http.register
+    environment:
+      USER_POOL_ID: ${self:resources.Outputs.OifUserPoolId.Value}
+      USER_POOL_APP_CLIENT_ID: ${self:resources.Outputs.CognitoUserPoolClientId.Value}
+    iamRoleStatements:
+      - Effect: Allow
+        Action: 
+          - cognito-idp:*
+        Resource:
+          - ${self:resources.Outputs.OifUserPoolArn.Value}
+    dependsOn:
+      - CognitoUserPoolClient
     events:
       - httpApi:
           method: POST
@@ -62,20 +105,27 @@ functions:
 
 resources:
   Resources:
-    HttpApiAuthorizerCognitoJwtAuthorizer:
-      DependsOn: CognitoUserPoolOifUserPool
     CognitoUserPoolClient:
       Type: AWS::Cognito::UserPoolClient
       DependsOn: CognitoUserPoolOifUserPool
       Properties:
-        UserPoolId: ${self:resources.Outputs.OifUserPoolProviderId.Value}
+        UserPoolId: ${self:resources.Outputs.OifUserPoolId.Value}
+        ExplicitAuthFlows:
+          - ALLOW_ADMIN_USER_PASSWORD_AUTH
+          - ALLOW_USER_PASSWORD_AUTH
+          - ALLOW_REFRESH_TOKEN_AUTH
   Outputs:
     OifUserPoolProviderUrl:
       Value:
         Fn::GetAtt: 
           - CognitoUserPoolOifUserPool
           - ProviderURL
-    OifUserPoolProviderId:
+    OifUserPoolArn:
+      Value:
+        Fn::GetAtt:
+          - CognitoUserPoolOifUserPool
+          - Arn
+    OifUserPoolId:
       Value: 
         Ref: CognitoUserPoolOifUserPool
     CognitoUserPoolClientId:

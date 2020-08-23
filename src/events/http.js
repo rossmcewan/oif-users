@@ -5,6 +5,7 @@ const {
   cors,
   httpEventNormalizer,
   httpHeaderNormalizer,
+  jsonBodyParser,
 } = require("middy/middlewares");
 const { USER_POOL_ID, USER_POOL_APP_CLIENT_ID } = process.env;
 
@@ -19,15 +20,12 @@ const _getUser = async (event) => {
   const result = await cisp.adminGetUser(params).promise();
 
   return {
-    statusCode: 200,
-    body: {
-      user: {
-        username: result.Username,
-        email: result.UserAttributes["email"],
-        token: "NEED TO THINK ABOUT THIS",
-        bio: result.UserAttributes["profile"],
-        image: result.UserAttributes["picture"],
-      },
+    user: {
+      username: result.Username,
+      email: result.UserAttributes["email"],
+      token: "NEED TO THINK ABOUT THIS",
+      bio: result.UserAttributes["profile"],
+      image: result.UserAttributes["picture"],
     },
   };
 };
@@ -44,35 +42,78 @@ const _login = async (event) => {
     },
   };
   const result = await cisp.initiateAuth(params).promise();
-  return {
-    statusCode: 200,
-    body: {
-      user: {
-        username: "",
-        email: email,
-        token: result.AuthenticationResult.AccessToken,
-        bio: "",
-        image: "",
-      },
+  console.log(JSON.stringify(result));
+  const user = {
+    user: {
+      username: email,
+      email: email,
+      token: result.AuthenticationResult.AccessToken,
+      bio: "",
+      image: "",
     },
   };
+  console.log(JSON.stringify(user));
+  return user;
 };
 
 const _updateUser = async (event) => {
   console.log(JSON.stringify(event));
-  //can do bio and image like this
-  const result = await cisp
-    .adminUpdateUserAttributes({
-      UserAttributes: [],
-    })
-    .promise();
-  //if password  needs to change, can use adminSetUserPassword
-  //cannot change username
+  const { username, email, bio, image, password } = event.body.user;
+  const promises = [];
+  const attributes = [];
+  if (email) {
+    attributes.push({
+      Name: "email",
+      Value: email,
+    });
+  }
+  if (bio) {
+    attributes.push({
+      Name: "profile",
+      Value: bio,
+    });
+  }
+  if (image) {
+    attributes.push({
+      Name: "picture",
+      Value: image,
+    });
+  }
+  if (attributes.length) {
+    promises.push(
+      cisp
+        .adminUpdateUserAttributes({
+          UserAttributes: [],
+        })
+        .promise()
+    );
+  }
+  if (password) {
+    promises.push(
+      cisp
+        .adminSetUserPassword({
+          Password: password,
+          UserPoolId: USER_POOL_ID,
+          Username: username,
+          Permanent: true,
+        })
+        .promise()
+    );
+  }
+  const results = await Promise.all(promises);
+  return {
+    user: {
+      username,
+      email,
+      bio,
+      image,
+    },
+  };
 };
 
 const _register = async (event) => {
   console.log(JSON.stringify(event));
-  const { username, email, password } = event.body;
+  const { username, email, password } = event.body.user;
   const result = await cisp
     .signUp({
       ClientId: USER_POOL_APP_CLIENT_ID,
@@ -93,13 +134,23 @@ const _register = async (event) => {
       Username: username,
     })
     .promise();
+  return {
+    user: {
+      username,
+      email: email,
+      //token: result.AuthenticationResult.AccessToken,
+      bio: "",
+      image: "",
+    },
+  };
 };
 
 const wrap = (func) => {
   return middy(func)
     .use(cors())
     .use(httpEventNormalizer())
-    .use(httpHeaderNormalizer());
+    .use(httpHeaderNormalizer())
+    .use(jsonBodyParser());
 };
 
 module.exports = {
