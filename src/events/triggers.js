@@ -16,7 +16,6 @@ const connect = async () => {
 };
 
 module.exports.onUserMigration = async (event) => {
-  console.log(event);
   const {
     userName,
     request: { password },
@@ -25,7 +24,6 @@ module.exports.onUserMigration = async (event) => {
     user: { email: userName, password },
   });
   const { user } = result.data;
-  console.log('user', user);
   if (user) {
     event.response.userAttributes = {
       email: user.email,
@@ -40,11 +38,17 @@ module.exports.onUserMigration = async (event) => {
 
 module.exports.onPostConfirmation = async (event) => {
   console.log(JSON.stringify(event));
+  const {
+    userName,
+    request: {
+      userAttributes: { name },
+    },
+  } = event;
   await connect();
   const User = conn.model("User");
   var user = new User();
-
-  //   user.username = req.body.user.username;
-  //   user.email = req.body.user.email;
-  //   await user.save();
+  user.username = name;
+  user.email = userName;
+  await user.save();
+  return event;
 };

@@ -33,7 +33,7 @@ functions:
           pool: OifUserPool
           trigger: UserMigration
   triggers_onPostConfirmation:
-    handler: src/events/triggers/onPostConfirmation
+    handler: src/events/triggers.onPostConfirmation
     environment:
       MONGODB_URI: ${ssm:/OIF_USERS/MONGODB_URI}
     events:

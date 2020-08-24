@@ -16,7 +16,6 @@ const getAttribute = (attributes, name) => {
 
 const _getUser = async (event) => {
   //need to investigate this
-  console.log(JSON.stringify(event));
 
   const {
     requestContext: {
@@ -34,11 +33,9 @@ const _getUser = async (event) => {
   };
   const result = await cisp.adminGetUser(params).promise();
 
-  console.log("result", result);
-
   return {
     user: {
-      username: result.Username,
+      username: getAttribute(result.UserAttributes, "name").Value,
       email: result.Username,
       token: "INVALID",
       bio: getAttribute(result.UserAttributes, "profile").Value,
@@ -57,14 +54,19 @@ const _login = async (event) => {
       PASSWORD: password,
     },
   };
-  const result = await cisp.initiateAuth(params).promise();
+  const authResult = await cisp.initiateAuth(params).promise();
+  const getUserParams = {
+    UserPoolId: USER_POOL_ID,
+    Username: email,
+  };
+  const userResult = await cisp.adminGetUser(getUserParams).promise();
   const user = {
     user: {
-      username: email,
+      username: getAttribute(userResult.UserAttributes, "name").Value,
       email: email,
-      token: result.AuthenticationResult.AccessToken,
-      bio: "",
-      image: "",
+      token: authResult.AuthenticationResult.AccessToken,
+      bio: getAttribute(userResult.UserAttributes, "profile").Value,
+      image: getAttribute(userResult.UserAttributes, "picture").Value,
     },
   };
   return user;
@@ -91,6 +93,12 @@ const _updateUser = async (event) => {
     attributes.push({
       Name: "picture",
       Value: image,
+    });
+  }
+  if (username) {
+    attributes.push({
+      Name: "name",
+      Value: username,
     });
   }
   if (attributes.length) {
@@ -126,17 +134,20 @@ const _updateUser = async (event) => {
 };
 
 const _register = async (event) => {
-  console.log(JSON.stringify(event));
   const { username, email, password } = event.body.user;
   const result = await cisp
     .signUp({
       ClientId: USER_POOL_APP_CLIENT_ID,
       Password: password,
-      Username: username,
+      Username: email,
       UserAttributes: [
         {
           Name: "email",
           Value: email,
+        },
+        {
+          Name: "name",
+          Value: username,
         },
       ],
     })
@@ -145,18 +156,27 @@ const _register = async (event) => {
   const confirmed = await cisp
     .adminConfirmSignUp({
       UserPoolId: USER_POOL_ID,
-      Username: username,
+      Username: email,
     })
     .promise();
-  return {
-    user: {
-      username,
-      email: email,
-      //token: result.AuthenticationResult.AccessToken,
-      bio: "",
-      image: "",
+
+  return await _login({
+    body: {
+      user: {
+        email,
+        password,
+      },
     },
-  };
+  });
+//   return {
+//     user: {
+//       username,
+//       email: email,
+//       //token: result.AuthenticationResult.AccessToken,
+//       bio: "",
+//       image: "",
+//     },
+//   };
 };
 
 const wrap = (func) => {
