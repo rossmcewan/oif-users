@@ -31,7 +31,6 @@ const _getUser = async (event) => {
 };
 
 const _login = async (event) => {
-  console.log(JSON.stringify(event));
   const { email, password } = event.body.user;
   const params = {
     AuthFlow: "USER_PASSWORD_AUTH",
@@ -42,7 +41,6 @@ const _login = async (event) => {
     },
   };
   const result = await cisp.initiateAuth(params).promise();
-  console.log(JSON.stringify(result));
   const user = {
     user: {
       username: email,
@@ -52,7 +50,6 @@ const _login = async (event) => {
       image: "",
     },
   };
-  console.log(JSON.stringify(user));
   return user;
 };
 

@@ -30,6 +30,12 @@ functions:
       - cognitoUserPool:
           pool: OifUserPool
           trigger: UserMigration
+  triggers_onPostConfirmation:
+    handler: src/events/triggers/onPostConfirmation
+    events:
+      - cognitoUserPool:
+          pool: OifUserPool
+          trigger: PostConfirmation
   http_getUser:
     handler: src/events/http.getUser
     environment:
