@@ -1,7 +1,7 @@
-const Axios = require('axios');
+const Axios = require("axios");
 const mongoose = require("mongoose");
 const UserModel = require("../migration/models/User");
-const legacyApi = 'https://oktank-backend.herokuapp.com/api/users/login';
+const legacyApi = `${process.env.LEGACY_API}/users/login`;
 let conn;
 
 const connect = async () => {
@@ -16,19 +16,35 @@ const connect = async () => {
 };
 
 module.exports.onUserMigration = async (event) => {
-  console.log(JSON.stringify(event));
-  const {userName, request:{password}} = event;
-  const result = await Axios.default.post(legacyApi, { user: { email: userName, password } });
-  console.log('result', JSON.stringify(result));
+  console.log(event);
+  const {
+    userName,
+    request: { password },
+  } = event;
+  const result = await Axios.default.post(legacyApi, {
+    user: { email: userName, password },
+  });
+  const { user } = result.data;
+  console.log('user', user);
+  if (user) {
+    event.response.userAttributes = {
+      email: user.email,
+      picture: user.image,
+      profile: user.bio,
+    };
+    event.response.finalUserStatus = "CONFIRMED";
+    event.response.messageAction = "SUPPRESS";
+    return event;
+  }
 };
 
 module.exports.onPostConfirmation = async (event) => {
   console.log(JSON.stringify(event));
   await connect();
-  const User = conn.model('User');
+  const User = conn.model("User");
   var user = new User();
 
-//   user.username = req.body.user.username;
-//   user.email = req.body.user.email;
-//   await user.save();
+  //   user.username = req.body.user.username;
+  //   user.email = req.body.user.email;
+  //   await user.save();
 };

@@ -25,6 +25,8 @@ plugins:
 
 functions:
   triggers_onUserMigration:
+    environment:
+      LEGACY_API: https://oktank-backend.herokuapp.com/api
     handler: src/events/triggers.onUserMigration
     events:
       - cognitoUserPool:
@@ -32,6 +34,8 @@ functions:
           trigger: UserMigration
   triggers_onPostConfirmation:
     handler: src/events/triggers/onPostConfirmation
+    environment:
+      MONGODB_URI: ${ssm:/OIF_USERS/MONGODB_URI}
     events:
       - cognitoUserPool:
           pool: OifUserPool

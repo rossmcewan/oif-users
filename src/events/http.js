@@ -9,23 +9,40 @@ const {
 } = require("middy/middlewares");
 const { USER_POOL_ID, USER_POOL_APP_CLIENT_ID } = process.env;
 
+const getAttribute = (attributes, name) => {
+  const value = attributes.find((x) => x.Name == name);
+  return value || {};
+};
+
 const _getUser = async (event) => {
   //need to investigate this
   console.log(JSON.stringify(event));
-  const id = event.body.payload.id;
+
+  const {
+    requestContext: {
+      authorizer: {
+        jwt: {
+          claims: { username },
+        },
+      },
+    },
+  } = event;
+
   const params = {
     UserPoolId: USER_POOL_ID,
-    Username: id,
+    Username: username,
   };
   const result = await cisp.adminGetUser(params).promise();
+
+  console.log("result", result);
 
   return {
     user: {
       username: result.Username,
-      email: result.UserAttributes["email"],
-      token: "NEED TO THINK ABOUT THIS",
-      bio: result.UserAttributes["profile"],
-      image: result.UserAttributes["picture"],
+      email: result.Username,
+      token: "INVALID",
+      bio: getAttribute(result.UserAttributes, "profile").Value,
+      image: getAttribute(result.UserAttributes, "picture").Value,
     },
   };
 };
