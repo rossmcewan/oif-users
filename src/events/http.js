@@ -105,7 +105,9 @@ const _updateUser = async (event) => {
     promises.push(
       cisp
         .adminUpdateUserAttributes({
-          UserAttributes: [],
+          UserPoolId: USER_POOL_ID,
+          Username: email,
+          UserAttributes: attributes,
         })
         .promise()
     );
@@ -123,14 +125,20 @@ const _updateUser = async (event) => {
     );
   }
   const results = await Promise.all(promises);
-  return {
+  const getUserParams = {
+    UserPoolId: USER_POOL_ID,
+    Username: email,
+  };
+  const userResult = await cisp.adminGetUser(getUserParams).promise();
+  const user = {
     user: {
-      username,
-      email,
-      bio,
-      image,
+      username: getAttribute(userResult.UserAttributes, "name").Value,
+      email: email,
+      bio: getAttribute(userResult.UserAttributes, "profile").Value,
+      image: getAttribute(userResult.UserAttributes, "picture").Value,
     },
   };
+  return user;
 };
 
 const _register = async (event) => {
@@ -168,15 +176,6 @@ const _register = async (event) => {
       },
     },
   });
-//   return {
-//     user: {
-//       username,
-//       email: email,
-//       //token: result.AuthenticationResult.AccessToken,
-//       bio: "",
-//       image: "",
-//     },
-//   };
 };
 
 const wrap = (func) => {

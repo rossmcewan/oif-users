@@ -92,7 +92,7 @@ functions:
     events:
       - httpApi:
           method: PUT
-          path: /api/users
+          path: /api/user
           authorizer:
             name: CognitoJwtAuthorizer
   http_register:
