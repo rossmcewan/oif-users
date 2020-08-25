@@ -6,7 +6,7 @@ provider:
   runtime: nodejs12.x
   stage: ${opt:stage, 'dev'} 
   region: us-east-1
-  profile: ab3
+  profile: ${opt:profile}
   tracing:
     apiGateway: true
     lambda: true
