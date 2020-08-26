@@ -8,6 +8,8 @@ const {
   jsonBodyParser,
 } = require("middy/middlewares");
 const { USER_POOL_ID, USER_POOL_APP_CLIENT_ID } = process.env;
+const DEFAULT_IMAGE =
+  "https://static.productionready.io/images/smiley-cyrus.jpg";
 
 const getAttribute = (attributes, name) => {
   const value = attributes.find((x) => x.Name == name);
@@ -135,7 +137,9 @@ const _updateUser = async (event) => {
       username: getAttribute(userResult.UserAttributes, "name").Value,
       email: email,
       bio: getAttribute(userResult.UserAttributes, "profile").Value,
-      image: getAttribute(userResult.UserAttributes, "picture").Value,
+      image:
+        getAttribute(userResult.UserAttributes, "picture").Value ||
+        DEFAULT_IMAGE,
     },
   };
   return user;
